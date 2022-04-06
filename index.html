@@ -1,0 +1,96 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Входной контроль</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <script defer>
+        const url = 'https://60376bfd5435040017722533.mockapi.io/formRej';
+        const fields = ['name', 'phone', 'email'];
+
+        class NameError extends Error {
+            constructor() {
+                super('Incorrect name');
+            }
+        }
+       
+        class PhoneError extends Error {
+            constructor() {
+                super('Incorrect phone');
+            }
+        }
+
+        class EmailError extends Error {
+            constructor() {
+                super('Incorrect email');
+            }
+        }
+        async function send() {
+            const result = document.getElementById('result');
+            const [name, phone, email] = fields.map(el => {
+                const element = document.getElementById(el);
+                element.oninput = function () {
+                    result.innerText = ''
+                }
+                return element.value;
+            });
+
+            function isValidField(field, regexp) {
+                return regexp.test(field);
+            }
+
+            try {
+                result.innerText = '';
+                const validName = isValidField(name, /^[А-Яа-яЁё\s-]+$/);
+                const validPhone = isValidField(phone, /^[+ 0-9\s-]+$/);
+                const validEmail = isValidField(email, /^([A-Za-z0-9_\-\.])+\@([A-Za-z0-9_\-\.])+\.([A-Za-z]{2,4})$/);
+
+                if (!validName) {
+                    throw new NameError();
+                }
+
+                if (!validPhone) {
+                    throw new PhoneError();
+                }
+
+                if (email.length > 0 && !validEmail) {
+                    throw new EmailError();
+                }
+                 
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: JSON.stringify({name, phone, email}),
+                    headers: {'Content-Type': 'application/json'}
+                });
+                document.getElementById('result').innerText = await response.json();
+                } catch (error) {
+                    if (error instanceof NameError) {
+                    result.innerText = `Заполните поле ФИО! Только русские буквы, "-", пробелы.`;
+                } else if (error instanceof PhoneError) {
+                    result.innerText = `Заполните поле Телефон! Только цифры, "-", пробелы, "+".`
+                } else if (error instanceof EmailError) {
+                    result.innerText = `Неверный формат Email!`;
+                } else {
+                    result.innerText = `Ошибка, что-то пошло не так... ${error}`
+                }
+             
+            }
+        }
+
+    </script>
+</head>
+<body>
+<section class="forms">
+    <div class="container">
+        <h2 class="title">Задать вопрос</h2>
+        <input id="name" class="input" type="text" placeholder="Фамилия Имя Отчество *" name="name">
+        <input id="phone" class="input" type="tel" placeholder="Телефон *" name="phone">
+        <input id="email" class="input" type="email" placeholder="E-mail" name="email">
+        <button onclick="send()" class="btn">Отправить запрос</button>
+    </div>
+    	<div id="result"></div>
+</section>
+	
+</body>
+</html>
